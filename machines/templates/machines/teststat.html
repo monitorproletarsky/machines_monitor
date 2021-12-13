@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+
+
+{{ sql_all_count.count  }}
+<br>
+
+{% for x in sql_crush_equipment %}
+{{ x.machines_id }}
+{{ x.count }}
+<br>
+{% endfor %}
+
+{% for y in sql_reason_stat %}
+{{ y.repairer_master_reason }}
+{{ y.count }}
+<br>
+{% endfor %}
+
+</body>
+</html>

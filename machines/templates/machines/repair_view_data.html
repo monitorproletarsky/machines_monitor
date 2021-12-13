@@ -1,0 +1,301 @@
+{% extends "repair_base.html" %}
+{% load bootstrap %}
+{% load admin_urls %}
+{% load static %}
+{% load has_group %}
+
+{% block sidebar %}
+    {% if user.is_superuser %}
+        <li class="sidebar-brand">
+            <a href="/admin/"><span class="glyphicon glyphicon-cog"></span> Панель управления</a>
+        </li>
+    {% endif %}
+	{% if request.user|has_group:'Руководитель производства' %}
+        <li class="sidebar-brand">
+            <a href="http://192.168.3.14"><span class="glyphicon glyphicon-user"></span>  Личный кабинет</a>
+        </li>
+    {% endif %}
+{% endblock sidebar %}
+
+{% block content %}
+
+         <div class="modal" style="display:none" >
+ <div class="modalblock fix-w" >
+  <div class="modalblock-header" >
+    <div class="modal-title">Изменение статуса</div>
+    <div class="mclose"></div>
+  </div>
+  <div class="modalblock-content row" >
+
+    <div id="add-master_reason" style="display: block;">
+    <p><span>Выбрать причину поломки</span></p>
+     {{ form.repairer_master_reason }}
+    </div>
+
+    <div id="add-comment" style="display: block;">
+        <p><span>Добавить комментарий</span></p>
+        <textarea id="comment" placeholder="Введите комментарий"></textarea>
+
+    </div>
+    <div class="row">
+        <button id="addcom" type="submit" class="save btn btn-default" >Добавить</button>
+    </div>
+
+    <form id="set_status_form" method="POST" class="post-form" >{% csrf_token %}
+        {{ form.machines_id.as_hidden }}
+        <input type="hidden" name="id" id="id" />
+        {{ form.repair_job_status.as_hidden }}
+    </form>
+  </div>
+ </div>
+</div>
+<div class="page-header"></div>
+<div class="form-wrapper">
+    <form class="act-form" method="GET" action=".">
+        <div class="form-row">
+            <label class="required" for="workshop_id_param">Цех:</label>
+            <select id="workshop_id" name="workshop_id_param" data-selected_id="{{ return_workshop }}">
+                <option value=""  >Выбрать Цех</option>
+                {% for x in all_workshops  %}
+                    <option {% if return_workshop == x.pk %} selected="selected" {% endif %}  value="{{x.pk}}">{{x}}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label class="required" for="workshop">Участок:</label>
+            <select id="id_workshop" name="area_url_info" data-selected_id="{{ area_url_info.id }}">
+                <option value="" selected >Все участки</option>
+                {% for x in all_area  %}
+                    <option {% if area_url_info.id == x.id %} selected="selected" {% endif %}  value="{{x.id}}">{{x}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <input id="sendform" type="submit" value="Применить">
+        </div>
+    </form>
+
+</div>
+
+    <div class="page-header">
+        <h2>Неисправное оборудование</h2>
+    </div>
+
+<div id='pagecontent'>
+
+	{% if crush_equipments %}
+    <table class="table text-left" width="100%">
+        <thead style=" text-align: center">
+        <tr>
+            <th scope="col" style="width:20%">Участок</th>
+            <th scope="col" style="width:40%" colspan="2"><div style="text-align: center">
+Оборудование
+</div></th>
+            <th scope="col" style="width:20%" >Причина</th>
+            <th scope="col" style="width:20%" >Дата поломки</th>
+        </tr>
+        </thead>
+
+        {% for x in crush_equipments %}
+
+            <tr>
+                <td aria-label="Цех" ><a class="moreinfa" href="/machines/repair_view_data/?area_url_info={{x.machines_id.area.id}}">{{ x.machines_id.area }}</a></td>
+                <td aria-label="Оборудование" >({{ x.machines_id.code }}) {{ x.machines_id.model }}</td>
+                <td aria-label="Фото оборудования">
+
+		<div class="repair_img {% if x.machines_id.is_limit %} limited {% endif %}">
+                    {% if x.machines_id.image %}
+                        <img src="{{ x.machines_id.image.url }}" height="75px">
+                    {% else %}
+                        <img src="{% static 'img/noimg.png'%}" width="100px">
+                    {% endif %}
+                </div>
+
+		  </td>
+
+
+                <td aria-label="Причина" >
+                	{% if x.repair_reason %}
+                    {{ x.repair_reason }}
+                    {% else %}
+                        ПРИЧИНА НЕ УКАЗАНА
+                    {% endif %}
+                    </div>
+                </td>
+                <td aria-label="">{{ x.date | date:"Y-m-d H:i" }}</td>
+            </tr>
+        {% endfor %}
+
+    </table>
+        {% else %}
+        <h3>В данный момент нет неисправного оборудования</h3><br><br><br>
+        {% endif %}
+
+<div class="page-header">
+        <h2>Оборудование в ремонте</h2>
+    </div>
+    {% if repair_equipments %}
+<table class="table text-left" width="100%">
+        <thead style=" text-align: center">
+        <tr>
+            <th scope="col" style="width:20%">Участок</th>
+            <th scope="col" style="width:30%" colspan="2"><div style="text-align: center">
+Оборудование
+</div></th>
+			<th scope="col" style="width:10%" >Причина</th>
+            <th scope="col" style="width:10%" >ФИО</th>
+            <th scope="col" style="width:20%" >Комментарий</th>
+            <th scope="col" style="width:10%" >Начало ремонта</th>
+        </tr>
+        </thead>
+
+        {% for x in repair_equipments %}
+            <tr data-strid= {{ x.id }} >
+                <td aria-label="Цех" ><a class="moreinfa" href="/machines/repair_view_data/?area_url_info={{x.machines_id.area.id}}">{{ x.machines_id.area }}</a></td>
+                <td aria-label="Оборудование" >({{ x.machines_id.code }}) {{ x.machines_id.model }}</td>
+                <td aria-label="Фото оборудования">
+
+		<div class="repair_img {% if x.machines_id.is_limit %} limited {% endif %}">
+                    {% if x.machines_id.image %}
+                        <img src="{{ x.machines_id.image.url }}" height="75px">
+                    {% else %}
+                        <img src="{% static 'img/noimg.png'%}" width="100px">
+                    {% endif %}
+        </div>
+		</td>
+                <td aria-label="Данные мониторинга" >
+                   {% if x.repairer_master_reason %}
+                    <span class="real-reason" >{{ x.repairer_master_reason }}  </span>
+                    <button type="submit" class="save btn btn-default addmreason" data-reasonid="{{ x.repairer_master_reason.id }} ">Выбрать причину</button>
+                    {% else %}
+                        <span class="real-reason" > ПРИЧИНА НЕ УКАЗАНА </span>
+                        <button type="submit" class="save btn btn-default addmreason" data-reasonid="0" >Выбрать причину</button>
+                    {% endif %}
+
+                    </div>
+                </td>
+                </td>
+                <td aria-label="Данные мониторинга" >
+                	{{ x.repairer_id }}
+
+                    </div>
+                </td>
+                <td  class="all-coms" aria-label="Данные мониторинга" >
+                	{% if x.repair_comment %}
+                		{{ x.repair_comment|linebreaks }}
+                	{% else %}
+                	<p>КОММЕНТАРИЙ НЕ УКАЗАН</p>
+                	{% endif %}
+                    <button type="submit" class="save btn btn-default addcomment" >Добавить комментарий</button>
+                    </div>
+                </td>
+                <td aria-label="">{{ x.date | date:"Y-m-d H:i" }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+{% else %}
+        <h3>В данный момент нет оборудования в ремонте</h3>
+
+        {% endif %}
+
+    </div>
+</div>
+
+<script type="text/javascript">
+    var modal = $('.modal');
+    $(document).on('click','.mclose',function(){
+    getting_info = false;
+    getting_all_info = false;
+
+    $('#change-modal').text('Указать причину поломки');
+    $('#text-status').css('display','block');
+    crushreason = false;
+    modal.css('display','none');
+});
+$(document).keyup(function(e) {
+     if (e.key === "Escape") { // escape key maps to keycode `27`
+        $('.mclose').click();
+    }
+});
+
+$(document).on('click','.addcomment',function(e){
+    e.preventDefault();
+    modal.css('display','block');
+    $('#id').val( $(this).parents('tr').data('strid') );
+    $('#add-master_reason').css('display','none');
+    $('#add-comment').css('display','block');
+    $("input[name='repair_job_status']:hidden").val(2);
+    $("#id_repairer_master_reason").val( $($(this).parents('tr').data('strid')+' .addmreason').data('reasonid')  );
+});
+
+
+$(document).on('click','.addmreason',function(e){
+    e.preventDefault();
+    reasonid = parseInt($(this).data('reasonid'));
+    $('#id').val( $(this).parents('tr').data('strid') );
+    console.log
+    modal.css('display','block');
+    $('#add-master_reason').css('display','block');
+    $('#add-comment').css('display','none');
+    $("input[name='repair_job_status']:hidden").val(2);
+    $("#id_repairer_master_reason").val(reasonid);
+    $("#comment").val('');
+});
+
+
+$(document).on('click','#addcom',function(e){
+    e.preventDefault();
+    console.log('click');
+    var form = document.getElementById("set_status_form"),
+    fd = new FormData(form), aurl = "?action=add_comment",
+    com = $('#comment').val(),
+    mreason = $('#id_repairer_master_reason').val();
+        if (com != "" || mreason!="" ){
+            fd.append('comment',com);
+            fd.append('mreason',mreason);
+        }
+
+$.ajax({
+        url: aurl,
+        data: fd,
+        cache: false,
+        processData: false,
+        contentType: false,
+        type: 'POST',
+        success: function (data) {
+    $('#comment').val('');
+    $('#id_repairer_master_reason').val('');
+    var returntext='Данные не были указаны!';
+    if(com != "" && mreason==""){
+    returntext = 'Комментарий успешно добавлен!';
+    if($("tr[data-strid="+$('#id').val()+"] .all-coms p").text()=='КОММЕНТАРИЙ НЕ УКАЗАН'){
+    $("tr[data-strid="+$('#id').val()+"] .all-coms p").text('');
+    }
+    $("tr[data-strid="+$('#id').val()+"] .all-coms p").append(data.newmessage.replace(/\n/g, '<br/>'));
+
+    }
+    if(com == "" && mreason!=""){
+    returntext = 'Причина успешно указана!';
+    $("tr[data-strid="+$('#id').val()+"] .real-reason").text($('#id_repairer_master_reason option[value='+mreason+']').text());
+    }
+    if(com != "" && mreason!=""){
+    returntext = 'Данные успешно добавлены!';
+    $("tr[data-strid="+$('#id').val()+"] .real-reason").text($('#id_repairer_master_reason option[value='+mreason+']').text());
+    }
+    $('.infomessage').text(returntext);
+    $('.infomessage').removeClass('red');
+    $('.infobox').fadeIn();
+    $('#info-box').css('display','table');
+   setTimeout(function() {
+     $('#info-box').fadeOut(400);}, 2000);
+        }
+    });
+$(".mclose").click();
+        return false;
+});
+
+
+</script>
+{% endblock content %}
